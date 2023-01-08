@@ -61,7 +61,7 @@ void BLEServerStopService() {
 }
 
 void BLEServerSetup() {
-      // Create the BLE Device
+  // Create the BLE Device
   BLEDevice::init(bleServerName);
 
   // Create the BLE Server

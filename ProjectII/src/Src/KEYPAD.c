@@ -82,6 +82,7 @@ char KEYPAD3X4_Readkey(KEYPAD_Name* KEYPAD) // Scan Colums
 				uint16_t timeOut = HAL_GetTick();
 				while(HAL_GPIO_ReadPin(KEYPAD->RowPort[row],KEYPAD->RowPins[row])==0){
 					if (HAL_GetTick() - timeOut > 1000) {
+						HAL_GPIO_WritePin(KEYPAD->ColPort[colum],KEYPAD->ColPins[colum],GPIO_PIN_SET);
 						return 0;
 					}
 				};

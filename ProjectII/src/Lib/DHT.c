@@ -56,14 +56,15 @@ static uint8_t DHT_Read(DHT_Name* DHT)
 	{
 		while(!DHT_ReadPin(DHT));
 		__HAL_TIM_SET_COUNTER(DHT->Timer,0);
-		while(DHT_ReadPin(DHT));
-		if(__HAL_TIM_GET_COUNTER(DHT->Timer)<40)
+		while(__HAL_TIM_GET_COUNTER(DHT->Timer)<40);
+		if(!DHT_ReadPin(DHT))
 		{
 			Value &= ~(1<<(7-i));	
 		}
 		else {
 			Value |= 1<<(7-i);
 		}
+		while(DHT_ReadPin(DHT));
 	}
 	return Value;
 }
@@ -82,7 +83,7 @@ void DHT_Init(DHT_Name* DHT, uint8_t DHT_Type, TIM_HandleTypeDef* Timer, GPIO_Ty
 
 void DHT_ReadTempHum(DHT_Name* DHT)
 {
-	uint8_t Temp1, Temp2, RH1, RH2;
+	uint8_t Temp1, Temp2, RH1, RH2, SUM;
 	uint16_t Temp, Humi;
 	
 	if (DHT->Status == 0) {
@@ -95,7 +96,6 @@ void DHT_ReadTempHum(DHT_Name* DHT)
 	if((__HAL_TIM_GET_COUNTER(DHT->Timer) < DHT->Type)) {
 		return;
 	} 
-	plus();
 	
 	DHT_SetPinIn(DHT);    
 	DHT_DelayUs(DHT, 40); 
@@ -107,7 +107,6 @@ void DHT_ReadTempHum(DHT_Name* DHT)
 	while(DHT_ReadPin(DHT)){
 		if (HAL_GetTick() - timeOut > 1000) {
 			DHT->Status = 0;
-			failed();
 			return;
 		}
 	};
@@ -116,10 +115,15 @@ void DHT_ReadTempHum(DHT_Name* DHT)
 	RH2 = DHT_Read(DHT);
 	Temp1 = DHT_Read(DHT);
 	Temp2 = DHT_Read(DHT);
+	SUM = DHT_Read(DHT);
 	Temp = (Temp1<<8)|Temp2;
 	Humi = (RH1<<8)|RH2;
-	DHT->Temp = (float)(Temp/10.0);
-	DHT->Humi = (float)(Humi/10.0);
+	DHT->Temp = (float)(Temp/10.0) + 10.0;
+	DHT->Humi = (float)(Humi/10.0) / 100;
+
+	if (Temp < 11) {
+		DHT->Temp = 0;
+	}
 	
 	DHT->Delay = HAL_GetTick();
 	DHT->Status = 0;

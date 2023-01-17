@@ -53,10 +53,10 @@ extern "C" {
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-void plus(void);
-void failed(void);
-void getValue(uint16_t Value);
-void transmitNumber(uint16_t value);
+float tempSP;
+float airHumSP;
+uint16_t pHHumSP;
+uint16_t lightHumSP;
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

@@ -21,10 +21,15 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "display.h"
+#include "UART.h"
+#include "MathExtern.h"
+#include "key.h"
+
 #include "math.h"
 #include "string.h"
-#include <stdio.h>
-#include "KEYPAD.h"
+#include "stdio.h"
+// #include "KEYPAD.h"
 #include "DHT.h"
 #include "fonts.h"
 #include "ssd1306.h"
@@ -54,31 +59,28 @@ TIM_HandleTypeDef htim4;
 UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
-uint16_t temp = 0;
-uint16_t airHum = 0;
+float temp = 0;
+float airHum = 0;
 uint16_t pHHum = 0;
 uint16_t lightHum = 0;
 
-uint16_t tempSP = 50;
-uint16_t airHumSP = 50;
+float tempSP = 50;
+float airHumSP = 50;
 uint16_t pHHumSP = 50;
 uint16_t lightHumSP = 5000;
 
-uint8_t status = 0;
-uint8_t failul = 0;
-
-uint8_t valueType = 1;
-char keyEnter[5] = "";
+// uint8_t valueType = 1;
+// char keyEnter[5] = "";
 
 DHT_Name dht;
 
-char KEYMAP[NUMROWS][NUMCOLS] = {
-  {'1','2','3','A'},
-  {'4','5','6','B'},
-  {'7','8','9','C'},
-  {'*','0','#','D'}
-};
-KEYPAD_Name keypad;
+// char KEYMAP[NUMROWS][NUMCOLS] = {
+//   {'1','2','3','A'},
+//   {'4','5','6','B'},
+//   {'7','8','9','C'},
+//   {'*','0','#','D'}
+// };
+// KEYPAD_Name keypad;
 
 uint32_t time = 0;
 uint32_t time2 = 0;
@@ -98,244 +100,63 @@ static void MX_I2C1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-uint16_t getMax(uint16_t num1, uint16_t num2) {
-	if (num1 > num2) {
-		return num1;
-	}
-
-	return num2;
-}
-uint8_t * numberToString(uint16_t val){
-	if (val == 0) return (uint8_t *)"0";
-  
-	static uint8_t buf[32] = {0};
-	
-	int i = 30;
-	
-	for(; val && i ; --i, val /= 10)
-	
-		buf[i] = "0123456789abcdef"[val % 10];
-	
-	return &buf[i+1];
-	
-}
-uint16_t getADCValue(uint32_t channel) {
-	ADC_ChannelConfTypeDef sConfig = {0};
-	
-	sConfig.Channel = channel;
-  sConfig.Rank = ADC_REGULAR_RANK_1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
-  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-	
-	HAL_ADC_Start(&hadc1);
-	HAL_ADC_PollForConversion(&hadc1, 10);
-	uint16_t value = HAL_ADC_GetValue(&hadc1);
-	HAL_ADC_Stop(&hadc1);
-
-	return value;
-}
-void transmitString(uint8_t * value) {
-	HAL_UART_Transmit(&huart1, value, strlen((char *)value), 10);	
-	
-} 
-void transmitNumber(uint16_t value) {
-	uint8_t * string = numberToString(value);
-	HAL_UART_Transmit(&huart1, string, strlen((char *)string), 10);
-} 
-
-void valueShow() {
-  if (valueType == 1) {
-    SSD1306_GotoXY(10,10);
-    SSD1306_Puts("Temp: ", &Font_7x10, SSD1306_COLOR_WHITE);
-    SSD1306_Puts((char *)numberToString(temp + 10), &Font_7x10, SSD1306_COLOR_WHITE);
-    SSD1306_Puts("C", &Font_7x10, SSD1306_COLOR_WHITE);
-    SSD1306_Puts("             ", &Font_7x10, SSD1306_COLOR_WHITE);
-    
-    SSD1306_GotoXY(10,25);
-    SSD1306_Puts("SP: ", &Font_7x10, SSD1306_COLOR_WHITE);
-    SSD1306_Puts((char *)numberToString(tempSP), &Font_7x10, SSD1306_COLOR_WHITE);
-    SSD1306_Puts("C", &Font_7x10, SSD1306_COLOR_WHITE);
-    SSD1306_Puts("             ", &Font_7x10, SSD1306_COLOR_WHITE);
-  }
-  if (valueType == 2) {
-    SSD1306_GotoXY(10,10);
-    SSD1306_Puts("Air Humi: ", &Font_7x10, SSD1306_COLOR_WHITE);
-    SSD1306_Puts((char *)numberToString(airHum / 100), &Font_7x10, SSD1306_COLOR_WHITE);
-    SSD1306_Puts("%", &Font_7x10, SSD1306_COLOR_WHITE);
-    SSD1306_Puts("             ", &Font_7x10, SSD1306_COLOR_WHITE);
-    
-    SSD1306_GotoXY(10,25);
-    SSD1306_Puts("SP: ", &Font_7x10, SSD1306_COLOR_WHITE);
-    SSD1306_Puts((char *)numberToString(airHumSP), &Font_7x10, SSD1306_COLOR_WHITE);
-    SSD1306_Puts("%", &Font_7x10, SSD1306_COLOR_WHITE);
-    SSD1306_Puts("             ", &Font_7x10, SSD1306_COLOR_WHITE);
-  }
-  if (valueType == 3) {
-    pHHum = 100 * (1 - (getADCValue(ADC_CHANNEL_1) - 1380.0) / 2170.0);
-    //3550 1380
-
-    SSD1306_GotoXY(10,10);
-    SSD1306_Puts("PH Humi: ", &Font_7x10, SSD1306_COLOR_WHITE);
-    SSD1306_Puts((char *)numberToString(pHHum), &Font_7x10, SSD1306_COLOR_WHITE);
-    SSD1306_Puts("%", &Font_7x10, SSD1306_COLOR_WHITE);
-    SSD1306_Puts("             ", &Font_7x10, SSD1306_COLOR_WHITE);
-    
-    SSD1306_GotoXY(10,25);
-    SSD1306_Puts("SP: ", &Font_7x10, SSD1306_COLOR_WHITE);
-    SSD1306_Puts((char *)numberToString(pHHumSP), &Font_7x10, SSD1306_COLOR_WHITE);
-    SSD1306_Puts("%", &Font_7x10, SSD1306_COLOR_WHITE);
-    SSD1306_Puts("             ", &Font_7x10, SSD1306_COLOR_WHITE);
-  }
-  if (valueType == 4) {
-    //3490 320
-    //R1 = 4k7
-    double alpha = getADCValue(ADC_CHANNEL_2) / 4095.0;
-    lightHum = 1356500.0 / pow(4700 * alpha / (1 - alpha), 0.815) - 330;
-    // lightHum = getADCValue(ADC_CHANNEL_2);
-
-    SSD1306_GotoXY(10,10);
-    SSD1306_Puts("Light: ", &Font_7x10, SSD1306_COLOR_WHITE);
-    SSD1306_Puts((char *)numberToString(lightHum), &Font_7x10, SSD1306_COLOR_WHITE);
-    SSD1306_Puts("Lux", &Font_7x10, SSD1306_COLOR_WHITE);
-    SSD1306_Puts("             ", &Font_7x10, SSD1306_COLOR_WHITE);
-    
-    SSD1306_GotoXY(10,25);
-    SSD1306_Puts("SP: ", &Font_7x10, SSD1306_COLOR_WHITE);
-    SSD1306_Puts((char *)numberToString(lightHumSP), &Font_7x10, SSD1306_COLOR_WHITE);
-    SSD1306_Puts("Lux", &Font_7x10, SSD1306_COLOR_WHITE);
-    SSD1306_Puts("             ", &Font_7x10, SSD1306_COLOR_WHITE);
-  }
-}
-
-void removeKeyEnter() {
-  uint8_t num = strlen(keyEnter);
-  
-  for(int i = 0; i < num; i++) {
-    keyEnter[i] = '\0';
-  }
-}
-
-void setSP() {
-  uint16_t value = 0;
-  uint8_t multiple = 1;
-  for(int i = strlen(keyEnter); i >= 0; i--) {
-    if (keyEnter[i] >= '0' && keyEnter[i] <= '9') {
-      value = value + (keyEnter[i] - '0') * multiple;
-      multiple *= 10;
-    }
-  }
-  
-  if (valueType == 1) {
-    tempSP = value;
-  }
-  if (valueType == 2) {
-    airHumSP = value;
-  }
-  if (valueType == 3) {
-    pHHumSP = value;
-  }
-  if (valueType == 4) {
-    lightHumSP = value;
-  }
-
-  removeKeyEnter();
-}
-
-void commandEnter(char key) {
-  if (key == 'A' || key == 'B' || key == 'C' || key == 'D') {
-    removeKeyEnter();
-    return;
-  }
-
-  if (key == '*') {
-    if (keyEnter[0] == '*') { 
-      removeKeyEnter();
-      return;
-    }
-    removeKeyEnter();
-    keyEnter[0] = '*';
-    return;
-  }
-
-  if (key == '#' && keyEnter[0] == '*') {
-    setSP();
-    return;
-  }
-
-  if (keyEnter[0] == '*') { 
-    keyEnter[strlen(keyEnter)] = key;
-    if (strlen(keyEnter) > 3) {
-      setSP();
-    }
-    return;
-  }
-}
 
 void callBackMain() {
+  DHT_ReadTempHum(&dht);
+  if (dht.Temp < 1000) {
+    temp = dht.Temp;
+    airHum = dht.Humi;
+  }
+
 	while(1) {
-		char key = KEYPAD3X4_Readkey(&keypad);
+    enterKey();
 
-		if(key) {
-      if (key == 'A') {
-        valueType = 1;
-      }
-      if (key == 'B') {
-        valueType = 2;
-      }
-      if (key == 'C') {
-        valueType = 3;
-      }
-      if (key == 'D') {
-        valueType = 4;
-      }
-      valueShow();
-      commandEnter(key);
-		}
-
-		if (status == 0) {	
-			DHT_ReadTempHum(&dht);
-			if (dht.Temp < 1000) {
-				temp = dht.Temp;
-				airHum = dht.Humi;
-			}
-			return;
-		}
 		if (HAL_GetTick() - time > 2000) {
 			DHT_ReadTempHum(&dht);
-			if(dht.Status == 0) {
-				SSD1306_Clear();
-				if (dht.Temp > 1000) {
-					failed();
-				}
-				time = HAL_GetTick();
-			}
-			if (dht.Temp < 1000) {
-				temp = dht.Temp;
-				airHum = dht.Humi;
-			}
-			
-      valueShow();
-      SSD1306_GotoXY(10,40);
-			SSD1306_Puts("Command: ", &Font_7x10, SSD1306_COLOR_WHITE);
 
-      SSD1306_Puts(keyEnter, &Font_7x10, SSD1306_COLOR_WHITE);
+      float tempPrev = 0;
+      float airHumPrev = 0;
+      uint16_t pHHumPrev = 0;
+      uint16_t lightHumPrev = 0;
+
+			if(dht.Status == 0) {
+				time = HAL_GetTick();
+			} else {
+        if (HAL_GetTick() - time > 4000) {
+          dht.Status = 0;
+          time = HAL_GetTick();
+        }
+      }
+			if (dht.Temp < 1000) {
+				tempPrev = dht.Temp;
+				airHumPrev = dht.Humi;
+			}
+
+      //3550 1380
+      pHHumPrev = 100 * (1 - (getADCValue(ADC_CHANNEL_1) - 1380.0) / 2170.0);
+
+      //3490 320
+      //R1 = 4k7
+      double alpha = getADCValue(ADC_CHANNEL_2) / 4095.0;
+      lightHumPrev = 1356500.0 / pow(4700 * alpha / (1 - alpha), 0.815) - 300;
+			
+      if (abs(temp - tempPrev) > 0.1 || abs(airHum - airHumPrev) > 0.1 || abs(lightHum - lightHumPrev) > 1 || abs(pHHum - pHHumPrev) > 1) {
+        temp = tempPrev > 1 ? tempPrev : temp;
+        airHum = airHumPrev > 1 ? airHumPrev : airHum;
+        lightHum = lightHumPrev;
+        pHHum = pHHumPrev;
+        display();
+      }
 
 			// SSD1306_GotoXY(10,45);
 			// SSD1306_Puts("CT: ", &Font_7x10, SSD1306_COLOR_WHITE);
 			// SSD1306_Puts((char *)numberToString(status), &Font_7x10, SSD1306_COLOR_WHITE);
 			// SSD1306_Puts(" CF: ", &Font_7x10, SSD1306_COLOR_WHITE);
 			// SSD1306_Puts((char *)numberToString(failul), &Font_7x10, SSD1306_COLOR_WHITE);
-				
-			SSD1306_UpdateScreen();
 		}
 		
 		if (HAL_GetTick() - time2 > 1000) {
-			transmitString((uint8_t *)"Temperature: ");
-			transmitNumber(pHHum);
-			transmitString((uint8_t *)"\n");
+			transmitInterval();
 			
 			time2 = HAL_GetTick();
 		}
@@ -348,12 +169,6 @@ void callBackMain() {
 			time3 = HAL_GetTick();
 		}
 	}
-}
-void plus() {
-	status++;
-}
-void failed() {
-	failul++;
 }
 /* USER CODE END 0 */
 
@@ -390,9 +205,14 @@ int main(void)
   MX_TIM4_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
-	KEYPAD3X4_Init(&keypad, KEYMAP, 
-									GPIOA, GPIO_PIN_7, GPIOB, GPIO_PIN_0, GPIOB, GPIO_PIN_1, GPIOB, GPIO_PIN_10,
-									GPIOA, GPIO_PIN_3, GPIOA, GPIO_PIN_4, GPIOA, GPIO_PIN_5, GPIOA, GPIO_PIN_6);
+	// KEYPAD3X4_Init(&keypad, KEYMAP, 
+	// 								GPIOA, GPIO_PIN_7, GPIOB, GPIO_PIN_0, GPIOB, GPIO_PIN_1, GPIOB, GPIO_PIN_10,
+	// 								GPIOA, GPIO_PIN_3, GPIOA, GPIO_PIN_4, GPIOA, GPIO_PIN_5, GPIOA, GPIO_PIN_6);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
+
 	DHT_Init(&dht, DHT22, &htim4, GPIOA, GPIO_PIN_0);
 	
 	SSD1306_Init();
@@ -661,7 +481,7 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pins : PA3 PA4 PA5 PA6 */
   GPIO_InitStruct.Pin = GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PB0 PB1 PB10 */

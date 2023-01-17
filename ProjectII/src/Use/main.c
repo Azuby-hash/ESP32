@@ -61,13 +61,13 @@ UART_HandleTypeDef huart1;
 /* USER CODE BEGIN PV */
 float temp = 0;
 float airHum = 0;
-uint16_t pHHum = 0;
-uint16_t lightHum = 0;
+float pHHum = 0;
+float lightHum = 0;
 
 float tempSP = 50;
 float airHumSP = 50;
-uint16_t pHHumSP = 50;
-uint16_t lightHumSP = 5000;
+float pHHumSP = 50;
+float lightHumSP = 5000;
 
 // uint8_t valueType = 1;
 // char keyEnter[5] = "";

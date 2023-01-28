@@ -53,15 +53,17 @@ extern "C" {
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-float temp;
-float airHum;
-float pHHum;
-float lightHum;
+extern float temp;
+extern float airHum;
+extern float pHHum;
+extern float lightHum;
 
-float tempSP;
-float airHumSP;
-float pHHumSP;
-float lightHumSP;
+extern float tempSP;
+extern float airHumSP;
+extern float pHHumSP;
+extern float lightHumSP;
+
+extern float SP;
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

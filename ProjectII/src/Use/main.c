@@ -64,10 +64,12 @@ float airHum = 0;
 float pHHum = 0;
 float lightHum = 0;
 
-float tempSP = 50;
-float airHumSP = 50;
-float pHHumSP = 50;
-float lightHumSP = 5000;
+float tempSP;
+float airHumSP;
+float pHHumSP;
+float lightHumSP;
+
+float SP;
 
 // uint8_t valueType = 1;
 // char keyEnter[5] = "";
@@ -85,6 +87,7 @@ DHT_Name dht;
 uint32_t time = 0;
 uint32_t time2 = 0;
 uint32_t time3 = 0;
+uint32_t time4 = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -155,15 +158,23 @@ void callBackMain() {
 			// SSD1306_Puts((char *)numberToString(failul), &Font_7x10, SSD1306_COLOR_WHITE);
 		}
 		
-		if (HAL_GetTick() - time2 > 1000) {
+		if (HAL_GetTick() - time2 > 1200) {
 			transmitInterval();
 			
 			time2 = HAL_GetTick();
 		}
+    
+    if (HAL_GetTick() - time4 > 800) {
+      receiveInterval();
+	
+  		time4 = HAL_GetTick();
+		}
 
     if (HAL_GetTick() - time3 > 200) {
-      if (temp > tempSP || (airHum > airHumSP && airHum < 1000) || pHHum > pHHumSP || lightHum > lightHumSP) {
-			  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+      if (tempSP > 0.1 && airHum > 0.1 && lightHum > 0.1 && pHHum > 0.1) {
+        if (temp > tempSP || (airHum > airHumSP && airHum < 1000) || pHHum > pHHumSP || lightHum > lightHumSP) {
+          HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+        }
       }
 			
 			time3 = HAL_GetTick();

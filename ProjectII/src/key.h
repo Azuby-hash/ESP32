@@ -4,5 +4,6 @@
 #include "stm32f1xx_hal.h"
 
 void enterKey();
+extern float value;
 
 #endif

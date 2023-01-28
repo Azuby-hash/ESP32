@@ -42,9 +42,24 @@ uint16_t getADCValue(uint32_t channel) {
 }
 void transmitString(uint8_t * value) {
 	HAL_UART_Transmit(&huart1, value, strlen((char *)value), 10);	
-	
 } 
 void transmitNumber(uint16_t value) {
 	uint8_t * string = numberToString(value);
 	HAL_UART_Transmit(&huart1, string, strlen((char *)string), 10);
 } 
+
+static uint8_t value[100] = {0};
+
+uint8_t* receiveString() {
+	HAL_UART_Receive(&huart1, value, 100, 400);
+
+	// Clear data in Rx register
+
+	return value;
+} 
+
+void receiveClear() {
+	for(uint8_t i = 0; i < 100; i++) {
+		value[i] = 0;
+	}
+}

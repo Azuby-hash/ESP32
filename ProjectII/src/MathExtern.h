@@ -16,5 +16,7 @@ uint8_t * numberToString(uint16_t val);
 uint16_t getADCValue(uint32_t channel);
 void transmitString(uint8_t * value);
 void transmitNumber(uint16_t value);
+uint8_t* receiveString();
+void receiveClear();
 
 #endif

@@ -2,6 +2,7 @@
 #include "ssd1306.h"
 #include "MathExtern.h"
 #include "main.h"
+#include "UART.h"
 
 uint8_t onDisplay[2] = {0, 0};
 
@@ -72,15 +73,21 @@ void setPointShow(uint8_t type) {
   SSD1306_Puts("  Set Point           ", &Font_7x10,SSD1306_COLOR_WHITE);
 
   SSD1306_GotoXY(10,30);
-  if (values[type] < 100) {
-    SSD1306_Puts("     ", &Font_7x10,SSD1306_COLOR_WHITE);
-    SSD1306_Puts((char *)numberToString(values[type - 1]), &Font_7x10,SSD1306_COLOR_WHITE);
+
+  if (offReceive == 1) {
+    SSD1306_Puts(" Wait to set                 ", &Font_7x10,SSD1306_COLOR_WHITE);
+  } else {
+    if (values[type] < 100) {
+      SSD1306_Puts("     ", &Font_7x10,SSD1306_COLOR_WHITE);
+      SSD1306_Puts((char *)numberToString(SP), &Font_7x10,SSD1306_COLOR_WHITE);
+    }
+    if (values[type] < 10000 && values[type] >= 100) {
+      SSD1306_Puts("    ", &Font_7x10,SSD1306_COLOR_WHITE);
+      SSD1306_Puts((char *)numberToString(SP), &Font_7x10,SSD1306_COLOR_WHITE);
+    }
+    SSD1306_Puts("                    ", &Font_7x10,SSD1306_COLOR_WHITE);
   }
-  if (values[type] < 10000 && values[type] >= 100) {
-    SSD1306_Puts("    ", &Font_7x10,SSD1306_COLOR_WHITE);
-    SSD1306_Puts((char *)numberToString(values[type - 1]), &Font_7x10,SSD1306_COLOR_WHITE);
-  }
-  SSD1306_Puts("                    ", &Font_7x10,SSD1306_COLOR_WHITE);
+
 
   SSD1306_GotoXY(10,15);
   SSD1306_Puts("                    ", &Font_7x10,SSD1306_COLOR_WHITE);

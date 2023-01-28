@@ -1,6 +1,7 @@
 #include "key.h"
 #include "display.h"
 #include "main.h"
+#include "UART.h"
 
 static char key = '\0';
 static uint32_t time = 0;
@@ -24,15 +25,15 @@ void action() {
         return;
     }
 
-    if (key == 'E') {
-        onDisplay[1] = onDisplay[0];
-        display();
-        return;
-    }
-
     float* values[4] = {&tempSP, &airHumSP, &pHHumSP, &lightHumSP};
 
     if (onDisplay[1] == 0) {
+        if (key == 'E') {
+            onDisplay[1] = onDisplay[0];
+            SP = *values[onDisplay[1] - 1];
+            display();
+            return;
+        }
         if (key == '+') {
             onDisplay[0]--;
         }
@@ -46,11 +47,23 @@ void action() {
             onDisplay[0] = 4;
         }
     } else {
+        if (offReceive == 1) { return; }
+        if (key == 'E') {
+            onDisplay[0] = onDisplay[0] == 0 ? 1 : 0;
+            if (onDisplay[0] == 0) {
+                *values[onDisplay[1] - 1] = SP;
+                onDisplay[1] = 0;
+            }
+            offReceive = 1;
+
+            display();
+            return;
+        }
         if (key == '+') {
-            *values[onDisplay[1] - 1] = *values[onDisplay[1] - 1] + 1;
+            SP++;
         }
         if (key == '-') {
-            *values[onDisplay[1] - 1] = *values[onDisplay[1] - 1] - 1;
+            SP--;
         }
     }
     display();
